@@ -33,7 +33,7 @@ func main() {
 	if *fake {
 		f := supafake.New()
 		defer f.Close()
-		f.AddAdmin("admin", f.AddUser("admin@example.com", "password"))
+		f.AddAdmin("admin", f.AddUser("admin@kishin.lol", "password"))
 		os.Setenv("SUPABASE_URL", f.URL)
 		os.Setenv("SUPABASE_PUBLISHABLE_KEY", supafake.PublishableKey)
 		os.Setenv("SUPABASE_SECRET_KEY", supafake.SecretKey)
