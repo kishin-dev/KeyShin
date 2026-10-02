@@ -178,7 +178,7 @@ All of these need an admin session (the dashboard's cookies).
 ## Security
 
 - **Sign-in** goes through Supabase Auth (hashed passwords, rate limiting). Admins type a username; the server looks up the matching Supabase user, and **only users listed in the `admins` table can sign in**, even if someone manages to create a Supabase account.
-- **Sessions** are Supabase's access and refresh tokens, kept in `HttpOnly`, `Secure`, `SameSite=Strict`, `__Host-` cookies that browser JavaScript can't read. Access tokens are checked with Supabase on every request, so logging out or deleting an admin takes effect immediately. Sessions end after 12 hours of inactivity.
+- **Sessions** are Supabase's access and refresh tokens, kept in `HttpOnly`, `Secure`, `SameSite=Strict`, `__Host-` cookies that browser JavaScript can't read. Access tokens are checked with Supabase, and a warm server instance remembers a verified session for 30 seconds so the dashboard stays fast (`SessionCacheTTL` in `lib/auth/cache.go`). Logging out takes effect immediately; removing an admin takes effect within 30 seconds. Sessions end after 12 hours of inactivity.
 - **The database** has Row Level Security on every table and no privileges for the public roles, so the publishable key can't read anything. Only the server, using the secret key, can.
 - **License keys** carry 80 random bits, far too many to guess. Activation limits are enforced inside the database with a row lock, so they hold even when many machines activate at the same moment.
 - The dashboard HTML is public, like any static file, but holds no data. All data comes from API endpoints that check the session.
