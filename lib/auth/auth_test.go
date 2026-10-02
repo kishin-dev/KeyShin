@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	handler "github.com/kishin-dev/keyshin/api"
+	"github.com/kishin-dev/keyshin/lib/auth"
 	"github.com/kishin-dev/keyshin/lib/supafake"
 )
 
@@ -60,7 +61,14 @@ func setup(t *testing.T, dev bool) (*supafake.Server, *client) {
 	return fake, &client{t: t, cookies: map[string]*http.Cookie{}}
 }
 
+func noCache(t *testing.T) {
+	old := auth.SessionCacheTTL
+	auth.SessionCacheTTL = 0
+	t.Cleanup(func() { auth.SessionCacheTTL = old })
+}
+
 func TestLoginFlow(t *testing.T) {
+	noCache(t) // this test checks token refresh, which the cache would skip
 	fake, c := setup(t, true)
 
 	if code, _ := c.call(handler.Session, "GET", ""); code != 401 {
@@ -142,6 +150,7 @@ func TestLoginRejected(t *testing.T) {
 }
 
 func TestRemovedAdminLosesAccess(t *testing.T) {
+	noCache(t) // without the short cache, removal takes effect immediately
 	fake, c := setup(t, true)
 	c.call(handler.Login, "POST", `{"username":"bartol","password":"s3cret-pass"}`)
 	fake.RemoveAdmin("bartol")
@@ -181,5 +190,29 @@ func TestLoginRequiresJSON(t *testing.T) {
 	handler.Login(rec, req)
 	if rec.Code != http.StatusUnsupportedMediaType {
 		t.Fatalf("form post = %d, want 415", rec.Code)
+	}
+}
+
+func TestSessionCacheSkipsSupabase(t *testing.T) {
+	fake, c := setup(t, true)
+	c.call(handler.Login, "POST", `{"username":"bartol","password":"s3cret-pass"}`)
+	c.call(handler.Session, "GET", "") // verifies with Supabase and caches
+	before := fake.Requests
+	for i := 0; i < 5; i++ {
+		if code, _ := c.call(handler.Session, "GET", ""); code != 200 {
+			t.Fatalf("cached session check = %d", code)
+		}
+	}
+	if fake.Requests != before {
+		t.Fatalf("cached checks made %d Supabase requests, want 0", fake.Requests-before)
+	}
+	// Logging out clears the cache entry, so copied cookies stop working.
+	stolen := &client{t: t, cookies: map[string]*http.Cookie{}}
+	for k, v := range c.cookies {
+		stolen.cookies[k] = v
+	}
+	c.call(handler.Logout, "POST", "")
+	if code, _ := stolen.call(handler.Session, "GET", ""); code != 401 {
+		t.Fatalf("session after logout = %d, want 401", code)
 	}
 }
