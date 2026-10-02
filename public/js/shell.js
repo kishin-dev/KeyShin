@@ -141,19 +141,22 @@
     return `<span class="pill" data-state="${escapeHTML(state)}">${stateLabels[state] || escapeHTML(state)}</span>`;
   }
 
-  // Runs the session check, then resolves with the signed-in admin.
-  const ready = (async () => {
-    try {
-      const admin = await api('/api/session');
-      const userEl = document.getElementById('session-user');
-      if (userEl) userEl.textContent = admin.username;
-      document.body.classList.remove('checking-session');
-      return admin;
-    } catch {
-      toLogin();
-      return new Promise(() => {}); // never resolves; we're leaving the page
-    }
-  })();
+  // Fills in the header. It runs alongside the page's own data requests;
+  // whichever gets a 401 first sends the admin to the login page.
+  const ready = api('/api/session').then((admin) => {
+    const userEl = document.getElementById('session-user');
+    if (userEl) userEl.textContent = admin.username;
+    return admin;
+  }).catch(() => {
+    toLogin();
+    return new Promise(() => {}); // never resolves; we're leaving the page
+  });
+
+  // Placeholder rows shown while a table loads, so the page doesn't jump.
+  function skeletonRows(columns, rows = 3) {
+    const cell = '<td><span class="skeleton"></span></td>';
+    return Array.from({ length: rows }, () => `<tr aria-hidden="true">${cell.repeat(columns)}</tr>`).join('');
+  }
 
   document.getElementById('logout')?.addEventListener('click', async (event) => {
     const button = event.currentTarget;
@@ -167,6 +170,6 @@
 
   window.KS = {
     api, ApiError, ready, escapeHTML, formatDate, formatDateTime, endOfDayISO, toDateInput,
-    toast, copy, showFormError, clearFormError, busy, statePill,
+    toast, copy, showFormError, clearFormError, busy, statePill, skeletonRows,
   };
 })();
