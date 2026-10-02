@@ -153,6 +153,9 @@ func (s *Service) Authenticate(w http.ResponseWriter, r *http.Request) (Admin, e
 	if access == "" && refresh == "" {
 		return Admin{}, ErrNotSignedIn
 	}
+	if admin, ok := cacheGet(access, time.Now()); ok {
+		return admin, nil
+	}
 
 	var user supa.User
 	var err error = supa.ErrInvalidCredentials
@@ -174,6 +177,7 @@ func (s *Service) Authenticate(w http.ResponseWriter, r *http.Request) (Admin, e
 		}
 		s.storeSession(w, sess)
 		user, err = sess.User, nil
+		access = sess.AccessToken
 	}
 	if err != nil {
 		return Admin{}, err
@@ -183,13 +187,18 @@ func (s *Service) Authenticate(w http.ResponseWriter, r *http.Request) (Admin, e
 	if errors.Is(err, ErrNotAdmin) {
 		s.ClearSession(w)
 	}
+	if err != nil {
+		return Admin{}, err
+	}
 	admin.Email = user.Email
-	return admin, err
+	cachePut(access, admin, time.Now())
+	return admin, nil
 }
 
 // Logout ends the session with Supabase and clears the cookies.
 func (s *Service) Logout(w http.ResponseWriter, r *http.Request) {
 	if access := s.cookie(r, "access"); access != "" {
+		cacheDelete(access)
 		if err := s.Supa.SignOut(r.Context(), access); err != nil && !errors.Is(err, context.Canceled) {
 			// The cookies are cleared either way; log in case Supabase is down.
 			log.Printf("auth: sign out: %v", err)
