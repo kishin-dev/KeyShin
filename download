@@ -1,0 +1,8 @@
+.env
+.env.*
+!.env.example
+.vercel
+/keyshin
+/dev
+node_modules
+/public/css/tailwind.css

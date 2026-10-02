@@ -1,0 +1,11 @@
+{
+  "name": "keyshin",
+  "private": true,
+  "scripts": {
+    "build": "tailwindcss -i ./web/tailwind.css -o ./public/css/tailwind.css --minify",
+    "watch": "tailwindcss -i ./web/tailwind.css -o ./public/css/tailwind.css --watch"
+  },
+  "devDependencies": {
+    "tailwindcss": "^3.4.19"
+  }
+}
