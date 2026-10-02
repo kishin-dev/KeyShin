@@ -1,6 +1,6 @@
 // Overview page: the totals across all products.
 (function () {
-  const { api, ready } = window.KS;
+  const { api } = window.KS;
   const statsErrorEl = document.getElementById('stats-error');
 
   async function loadStats() {
@@ -19,5 +19,5 @@
     }
   }
 
-  ready.then(loadStats);
+  loadStats();
 })();
