@@ -287,3 +287,52 @@ func (c *Client) Select(ctx context.Context, table string, query url.Values, out
 	_, err = c.do(req, out)
 	return err
 }
+
+// Insert adds a row and decodes the stored rows into out (a pointer to a
+// slice), so defaults like id and created_at come back.
+func (c *Client) Insert(ctx context.Context, table string, row, out any) error {
+	req, err := c.restRequest(ctx, http.MethodPost, table, nil, row)
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Prefer", "return=representation")
+	_, err = c.do(req, out)
+	return err
+}
+
+// Update changes the rows matching query and decodes them into out
+// (a pointer to a slice). An empty result means nothing matched.
+func (c *Client) Update(ctx context.Context, table string, query url.Values, patch, out any) error {
+	if len(query) == 0 {
+		return errors.New("supa: refusing to update without a filter")
+	}
+	req, err := c.restRequest(ctx, http.MethodPatch, table, query, patch)
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Prefer", "return=representation")
+	_, err = c.do(req, out)
+	return err
+}
+
+// Delete removes the rows matching query and returns how many were deleted.
+func (c *Client) Delete(ctx context.Context, table string, query url.Values) (int, error) {
+	if len(query) == 0 {
+		return 0, errors.New("supa: refusing to delete without a filter")
+	}
+	req, err := c.restRequest(ctx, http.MethodDelete, table, query, nil)
+	if err != nil {
+		return 0, err
+	}
+	req.Header.Set("Prefer", "return=representation")
+	var rows []json.RawMessage
+	_, err = c.do(req, &rows)
+	return len(rows), err
+}
+
+// IsCode reports whether err is a database error with the given Postgres
+// error code, e.g. "23505" for a unique violation.
+func IsCode(err error, code string) bool {
+	var ae *APIError
+	return errors.As(err, &ae) && ae.Code == code
+}

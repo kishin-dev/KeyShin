@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Licenses · KeyShin</title>
+  <meta name="robots" content="noindex">
+  <meta name="theme-color" content="#17171B">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500&family=Noto+Serif+JP:wght@700&family=Schibsted+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/tailwind.css">
+  <link rel="stylesheet" href="/css/app.css">
+</head>
+<body class="checking-session min-h-screen bg-base font-sans text-fg antialiased">
+
+  <header class="sticky top-0 z-10 border-b border-line bg-panel">
+    <div class="flex h-16 items-center justify-between gap-4 px-4 sm:px-6">
+      <a href="/dashboard" class="flex items-center gap-3">
+        <span class="seal seal-sm" aria-hidden="true">鍵</span>
+        <span class="text-lg font-semibold tracking-tight">KeyShin</span>
+      </a>
+      <div class="flex items-center gap-2 sm:gap-4">
+        <p class="hidden text-sm text-muted sm:block">Signed in as <span id="session-user" class="font-medium text-fg"></span></p>
+        <button id="logout" type="button" class="btn-quiet text-sm">Log out</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="lg:grid lg:grid-cols-[15rem_1fr]">
+    <nav class="border-b border-line bg-panel lg:sticky lg:top-16 lg:h-[calc(100vh-4rem)] lg:border-b-0 lg:border-r" aria-label="Main">
+      <ul class="flex gap-1 overflow-x-auto px-3 py-2 lg:flex-col lg:py-5">
+        <li><a href="/dashboard" class="nav-link whitespace-nowrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 13h6V4H4zM14 20h6v-9h-6zM4 20h6v-3H4zM14 7h6V4h-6z" stroke-linejoin="round"/></svg>Overview</a></li>
+        <li><a href="/licenses" class="nav-link whitespace-nowrap" aria-current="page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="8" cy="15" r="4"/><path d="m11 12 9-9M17 6l3 3M14 9l2 2" stroke-linecap="round"/></svg>Licenses</a></li>
+        <li><a href="/products" class="nav-link whitespace-nowrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 3 3 7.5 12 12l9-4.5zM3 12l9 4.5 9-4.5M3 16.5 12 21l9-4.5" stroke-linejoin="round"/></svg>Products</a></li>
+        <li><a class="nav-link whitespace-nowrap" aria-disabled="true" title="Coming next"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6" stroke-linecap="round"/></svg>Admin accounts</a></li>
+      </ul>
+    </nav>
+
+    <main class="px-4 py-8 sm:px-8 lg:px-12 lg:py-12">
+      <div class="max-w-6xl">
+        <div class="flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <h1 class="text-3xl font-semibold tracking-tight">Licenses</h1>
+            <p class="mt-2 text-muted">Every key you've issued. Click one to see its machines, edit it or revoke it.</p>
+          </div>
+          <button id="issue-license" type="button" class="btn-primary">Issue license</button>
+        </div>
+
+        <!-- Filters -->
+        <form id="filters" class="mt-8 grid gap-3 sm:grid-cols-[1fr_12rem_10rem]" role="search" onsubmit="return false">
+          <div>
+            <label for="f-q" class="sr-only">Search</label>
+            <input id="f-q" name="q" type="search" class="field" placeholder="Search by key, customer name or email" autocomplete="off" spellcheck="false">
+          </div>
+          <div>
+            <label for="f-product" class="sr-only">Product</label>
+            <select id="f-product" name="product" class="field"><option value="">All products</option></select>
+          </div>
+          <div>
+            <label for="f-state" class="sr-only">Status</label>
+            <select id="f-state" name="state" class="field">
+              <option value="">Any status</option>
+              <option value="active">Active</option>
+              <option value="expired">Expired</option>
+              <option value="revoked">Revoked</option>
+            </select>
+          </div>
+        </form>
+
+        <p id="load-error" class="form-error mt-6" role="alert" hidden></p>
+
+        <div id="licenses-table" class="table-wrap mt-6" hidden>
+          <table class="table">
+            <thead>
+              <tr>
+                <th scope="col">Key</th>
+                <th scope="col">Product</th>
+                <th scope="col">Customer</th>
+                <th scope="col">Machines</th>
+                <th scope="col">Expires</th>
+                <th scope="col">Status</th>
+              </tr>
+            </thead>
+            <tbody id="licenses-body"></tbody>
+          </table>
+        </div>
+
+        <div id="list-footer" class="mt-4 flex items-center justify-between gap-4 text-sm text-muted" hidden>
+          <p id="list-count" aria-live="polite"></p>
+          <button id="load-more" type="button" class="btn-secondary btn-sm">Load more</button>
+        </div>
+
+        <section id="licenses-empty" class="mt-6 rounded-xl border border-dashed border-line px-6 py-12 text-center sm:px-12" hidden>
+          <h2 id="empty-title" class="text-xl font-semibold">No licenses yet</h2>
+          <p id="empty-text" class="mx-auto mt-2 max-w-md text-muted">Issue a license to give a customer a key for one of your products.</p>
+          <button id="empty-action" type="button" class="btn-primary mt-6">Issue license</button>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <!-- Issue a license -->
+  <dialog id="issue-dialog" class="modal" aria-labelledby="issue-title">
+    <form id="issue-form" novalidate>
+      <div class="modal-head">
+        <h2 id="issue-title" class="text-lg font-semibold">Issue license</h2>
+        <button type="button" class="icon-btn" data-close aria-label="Close"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m5 5 10 10M15 5 5 15" stroke-linecap="round"/></svg></button>
+      </div>
+
+      <div id="issue-fields" class="modal-body space-y-5">
+        <div id="issue-no-products" class="form-error" hidden>
+          You need a product before you can issue licenses. <a href="/products" class="font-medium underline">Create one</a>.
+        </div>
+        <div>
+          <label for="i-product" class="label">Product</label>
+          <select id="i-product" name="productId" class="field" required></select>
+        </div>
+        <div class="grid gap-5 sm:grid-cols-2">
+          <div>
+            <label for="i-name" class="label">Customer name <span class="font-normal text-muted">(optional)</span></label>
+            <input id="i-name" name="customerName" class="field" maxlength="200" autocomplete="off">
+          </div>
+          <div>
+            <label for="i-email" class="label">Customer email <span class="font-normal text-muted">(optional)</span></label>
+            <input id="i-email" name="customerEmail" type="email" class="field" maxlength="254" autocomplete="off">
+          </div>
+        </div>
+        <div class="grid gap-5 sm:grid-cols-2">
+          <div>
+            <label for="i-max" class="label">Machines allowed</label>
+            <input id="i-max" name="maxActivations" type="number" class="field" min="1" max="10000" value="1" required>
+            <p class="hint">How many machines or servers can use this key at once.</p>
+          </div>
+          <div>
+            <label for="i-expires" class="label">Expires on <span class="font-normal text-muted">(optional)</span></label>
+            <input id="i-expires" name="expiresAt" type="date" class="field">
+            <p class="hint">Leave empty for a lifetime license.</p>
+          </div>
+        </div>
+        <div>
+          <label for="i-note" class="label">Note <span class="font-normal text-muted">(optional, only you see it)</span></label>
+          <textarea id="i-note" name="note" class="field" maxlength="2000" rows="2" placeholder="Bought via Ko-fi, order #1234"></textarea>
+        </div>
+        <p class="form-error" data-form-error role="alert" hidden></p>
+      </div>
+
+      <!-- Shown after the license is issued -->
+      <div id="issue-done" class="modal-body" hidden>
+        <p class="text-muted">Send this key to your customer. You can always find it again on this page.</p>
+        <div class="key-display mt-4">
+          <span id="issued-key"></span>
+          <button type="button" class="btn-secondary btn-sm shrink-0" id="copy-issued">Copy</button>
+        </div>
+        <p id="issued-summary" class="mt-4 text-sm text-muted"></p>
+      </div>
+
+      <div id="issue-foot" class="modal-foot">
+        <button type="button" class="btn-secondary" data-close>Cancel</button>
+        <button type="submit" id="issue-submit" class="btn-primary">Issue license</button>
+      </div>
+      <div id="issue-done-foot" class="modal-foot" hidden>
+        <button type="button" class="btn-secondary" id="issue-another">Issue another</button>
+        <button type="button" class="btn-primary" data-close>Done</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- License detail -->
+  <dialog id="detail-dialog" class="modal wide" aria-labelledby="detail-title">
+    <div class="modal-head">
+      <div class="min-w-0">
+        <h2 id="detail-title" class="text-lg font-semibold">License</h2>
+        <p id="detail-product" class="text-sm text-muted"></p>
+      </div>
+      <button type="button" class="icon-btn" data-close aria-label="Close"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m5 5 10 10M15 5 5 15" stroke-linecap="round"/></svg></button>
+    </div>
+
+    <div class="modal-body max-h-[70vh] space-y-8 overflow-y-auto">
+      <div>
+        <div class="key-display">
+          <span id="detail-key"></span>
+          <button type="button" class="btn-secondary btn-sm shrink-0" id="copy-detail">Copy</button>
+        </div>
+        <div class="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-muted">
+          <span id="detail-state"></span>
+          <span id="detail-created"></span>
+          <span id="detail-revoked"></span>
+        </div>
+      </div>
+
+      <section aria-labelledby="machines-title">
+        <div class="flex items-baseline justify-between gap-4">
+          <h3 id="machines-title" class="font-semibold">Machines</h3>
+          <p id="machines-count" class="text-sm text-muted"></p>
+        </div>
+        <ul id="machines-list" class="mt-3 divide-y divide-line rounded-lg border border-line"></ul>
+        <p id="machines-empty" class="mt-3 rounded-lg border border-dashed border-line px-4 py-5 text-sm text-muted" hidden>
+          No machines yet. One is added the first time your plugin checks this key with a fingerprint.
+        </p>
+      </section>
+
+      <form id="edit-form" class="space-y-5" novalidate>
+        <h3 class="font-semibold">Details</h3>
+        <div class="grid gap-5 sm:grid-cols-2">
+          <div>
+            <label for="e-name" class="label">Customer name</label>
+            <input id="e-name" name="customerName" class="field" maxlength="200" autocomplete="off">
+          </div>
+          <div>
+            <label for="e-email" class="label">Customer email</label>
+            <input id="e-email" name="customerEmail" type="email" class="field" maxlength="254" autocomplete="off">
+          </div>
+          <div>
+            <label for="e-max" class="label">Machines allowed</label>
+            <input id="e-max" name="maxActivations" type="number" class="field" min="1" max="10000" required>
+          </div>
+          <div>
+            <label for="e-expires" class="label">Expires on</label>
+            <input id="e-expires" name="expiresAt" type="date" class="field">
+            <p class="hint">Empty means it never expires.</p>
+          </div>
+        </div>
+        <div>
+          <label for="e-note" class="label">Note</label>
+          <textarea id="e-note" name="note" class="field" maxlength="2000" rows="2"></textarea>
+        </div>
+        <p class="form-error" data-form-error role="alert" hidden></p>
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <button type="button" id="toggle-revoke" class="btn-danger">Revoke license</button>
+          <button type="submit" id="save-license" class="btn-primary">Save changes</button>
+        </div>
+      </form>
+    </div>
+  </dialog>
+
+  <script src="/js/shell.js"></script>
+  <script src="/js/licenses.js"></script>
+</body>
+</html>

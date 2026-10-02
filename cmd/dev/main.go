@@ -2,16 +2,15 @@
 // static files from public/ with clean URLs, and the Go handlers from api/
 // under /api/*.
 //
-//	go run ./cmd/dev         # uses your Supabase project from .env
-//	go run ./cmd/dev -fake   # uses an in-memory fake Supabase, no setup needed
+//	go run ./cmd/dev
 //
-// It reads settings from a .env file in the project root if one exists.
+// It reads settings (your Supabase project) from a .env file in the project
+// root.
 // This command is only for local development; Vercel never builds it.
 package main
 
 import (
 	"bufio"
-	"flag"
 	"log"
 	"net/http"
 	"os"
@@ -19,25 +18,13 @@ import (
 	"strings"
 
 	handler "github.com/kishin-dev/keyshin/api"
-	"github.com/kishin-dev/keyshin/lib/supafake"
+	v1 "github.com/kishin-dev/keyshin/api/v1"
 )
 
 func main() {
-	fake := flag.Bool("fake", false, "use an in-memory fake Supabase (login: admin / password)")
-	flag.Parse()
-
 	loadDotEnv(".env")
 	if os.Getenv("KEYSHIN_DEV") == "" {
 		os.Setenv("KEYSHIN_DEV", "1") // allow the cookies over plain http://localhost
-	}
-	if *fake {
-		f := supafake.New()
-		defer f.Close()
-		f.AddAdmin("admin", f.AddUser("admin@kishin.lol", "password"))
-		os.Setenv("SUPABASE_URL", f.URL)
-		os.Setenv("SUPABASE_PUBLISHABLE_KEY", supafake.PublishableKey)
-		os.Setenv("SUPABASE_SECRET_KEY", supafake.SecretKey)
-		log.Print("Using fake Supabase. Sign in with admin / password")
 	}
 
 	mux := http.NewServeMux()
@@ -45,6 +32,10 @@ func main() {
 	mux.HandleFunc("/api/logout", handler.Logout)
 	mux.HandleFunc("/api/session", handler.Session)
 	mux.HandleFunc("/api/stats", handler.Stats)
+	mux.HandleFunc("/api/products", handler.Products)
+	mux.HandleFunc("/api/licenses", handler.Licenses)
+	mux.HandleFunc("/api/activations", handler.Activations)
+	mux.HandleFunc("/api/v1/validate", v1.Validate)
 	mux.HandleFunc("/api/", func(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, `{"error":"not found"}`, http.StatusNotFound)
 	})

@@ -140,6 +140,7 @@ func (s *Service) Login(ctx context.Context, w http.ResponseWriter, username, pa
 	if err != nil {
 		return Admin{}, err
 	}
+	admin.Email = sess.User.Email
 	s.storeSession(w, sess)
 	return admin, nil
 }
@@ -182,6 +183,7 @@ func (s *Service) Authenticate(w http.ResponseWriter, r *http.Request) (Admin, e
 	if errors.Is(err, ErrNotAdmin) {
 		s.ClearSession(w)
 	}
+	admin.Email = user.Email
 	return admin, err
 }
 

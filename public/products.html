@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Products · KeyShin</title>
+  <meta name="robots" content="noindex">
+  <meta name="theme-color" content="#17171B">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500&family=Noto+Serif+JP:wght@700&family=Schibsted+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/tailwind.css">
+  <link rel="stylesheet" href="/css/app.css">
+</head>
+<body class="checking-session min-h-screen bg-base font-sans text-fg antialiased">
+
+  <header class="sticky top-0 z-10 border-b border-line bg-panel">
+    <div class="flex h-16 items-center justify-between gap-4 px-4 sm:px-6">
+      <a href="/dashboard" class="flex items-center gap-3">
+        <span class="seal seal-sm" aria-hidden="true">鍵</span>
+        <span class="text-lg font-semibold tracking-tight">KeyShin</span>
+      </a>
+      <div class="flex items-center gap-2 sm:gap-4">
+        <p class="hidden text-sm text-muted sm:block">Signed in as <span id="session-user" class="font-medium text-fg"></span></p>
+        <button id="logout" type="button" class="btn-quiet text-sm">Log out</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="lg:grid lg:grid-cols-[15rem_1fr]">
+    <nav class="border-b border-line bg-panel lg:sticky lg:top-16 lg:h-[calc(100vh-4rem)] lg:border-b-0 lg:border-r" aria-label="Main">
+      <ul class="flex gap-1 overflow-x-auto px-3 py-2 lg:flex-col lg:py-5">
+        <li><a href="/dashboard" class="nav-link whitespace-nowrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 13h6V4H4zM14 20h6v-9h-6zM4 20h6v-3H4zM14 7h6V4h-6z" stroke-linejoin="round"/></svg>Overview</a></li>
+        <li><a href="/licenses" class="nav-link whitespace-nowrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="8" cy="15" r="4"/><path d="m11 12 9-9M17 6l3 3M14 9l2 2" stroke-linecap="round"/></svg>Licenses</a></li>
+        <li><a href="/products" class="nav-link whitespace-nowrap" aria-current="page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 3 3 7.5 12 12l9-4.5zM3 12l9 4.5 9-4.5M3 16.5 12 21l9-4.5" stroke-linejoin="round"/></svg>Products</a></li>
+        <li><a class="nav-link whitespace-nowrap" aria-disabled="true" title="Coming next"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6" stroke-linecap="round"/></svg>Admin accounts</a></li>
+      </ul>
+    </nav>
+
+    <main class="px-4 py-8 sm:px-8 lg:px-12 lg:py-12">
+      <div class="max-w-5xl">
+        <div class="flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <h1 class="text-3xl font-semibold tracking-tight">Products</h1>
+            <p class="mt-2 text-muted">Everything you issue license keys for.</p>
+          </div>
+          <button id="new-product" type="button" class="btn-primary">New product</button>
+        </div>
+
+        <p id="load-error" class="form-error mt-8" role="alert" hidden></p>
+
+        <div id="products-table" class="table-wrap mt-8" hidden>
+          <table class="table">
+            <thead>
+              <tr>
+                <th scope="col">Product</th>
+                <th scope="col">Slug</th>
+                <th scope="col">Key prefix</th>
+                <th scope="col">Licenses</th>
+                <th scope="col">Created</th>
+                <th scope="col"><span class="sr-only">Actions</span></th>
+              </tr>
+            </thead>
+            <tbody id="products-body"></tbody>
+          </table>
+        </div>
+
+        <section id="products-empty" class="mt-8 rounded-xl border border-dashed border-line px-6 py-12 text-center sm:px-12" hidden>
+          <span class="seal seal-sm mx-auto" aria-hidden="true">鍵</span>
+          <h2 class="mt-5 text-xl font-semibold">No products yet</h2>
+          <p class="mx-auto mt-2 max-w-md text-muted">A product is anything you sell access to, like a plugin or a paid tier. Create one, then issue license keys for it.</p>
+          <button type="button" class="btn-primary mt-6" data-action="new-product">Create product</button>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <!-- Create / edit product -->
+  <dialog id="product-dialog" class="modal" aria-labelledby="product-dialog-title">
+    <form id="product-form" method="dialog" novalidate>
+      <div class="modal-head">
+        <h2 id="product-dialog-title" class="text-lg font-semibold">New product</h2>
+        <button type="button" class="icon-btn" data-close aria-label="Close"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m5 5 10 10M15 5 5 15" stroke-linecap="round"/></svg></button>
+      </div>
+      <div class="modal-body space-y-5">
+        <div>
+          <label for="p-name" class="label">Name</label>
+          <input id="p-name" name="name" class="field" maxlength="120" required placeholder="Discord Bot Pro">
+        </div>
+        <div>
+          <label for="p-slug" class="label">Slug</label>
+          <input id="p-slug" name="slug" class="field mono" maxlength="64" required spellcheck="false" autocapitalize="off" placeholder="discord-bot-pro">
+          <p id="p-slug-hint" class="hint">Your plugin sends this with every license check. It can't be changed later.</p>
+        </div>
+        <div>
+          <label for="p-prefix" class="label">Key prefix</label>
+          <input id="p-prefix" name="keyPrefix" class="field mono uppercase" maxlength="8" spellcheck="false" autocapitalize="characters" placeholder="KSHN">
+          <p class="hint">The start of every key for this product, like <span class="mono">KSHN-8F3A-…</span>. Changing it only affects new keys.</p>
+        </div>
+        <div>
+          <label for="p-desc" class="label">Description <span class="font-normal text-muted">(optional)</span></label>
+          <textarea id="p-desc" name="description" class="field" maxlength="1000" rows="3"></textarea>
+        </div>
+        <p class="form-error" data-form-error role="alert" hidden></p>
+      </div>
+      <div class="modal-foot">
+        <button type="button" class="btn-secondary" data-close>Cancel</button>
+        <button type="submit" id="product-submit" class="btn-primary">Create product</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="/js/shell.js"></script>
+  <script src="/js/products.js"></script>
+</body>
+</html>
