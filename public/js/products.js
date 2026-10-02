@@ -1,6 +1,6 @@
 // Products page: list, create and edit products.
 (function () {
-  const { api, ready, escapeHTML, formatDate, toast, showFormError, clearFormError, busy } = window.KS;
+  const { api, escapeHTML, formatDate, toast, showFormError, clearFormError, busy, skeletonRows } = window.KS;
 
   const tableEl = document.getElementById('products-table');
   const bodyEl = document.getElementById('products-body');
@@ -126,5 +126,8 @@
     if (editId) openDialog(products.find((p) => p.id === editId));
   });
 
-  ready.then(load);
+  // Show placeholder rows straight away, then load.
+  tableEl.hidden = false;
+  bodyEl.innerHTML = skeletonRows(6);
+  load();
 })();
