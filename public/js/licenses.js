@@ -1,8 +1,8 @@
 // Licenses page: search, issue, edit, revoke/restore, and manage machines.
 (function () {
   const {
-    api, ready, escapeHTML, formatDate, formatDateTime, endOfDayISO, toDateInput,
-    toast, copy, showFormError, clearFormError, busy, statePill,
+    api, escapeHTML, formatDate, formatDateTime, endOfDayISO, toDateInput,
+    toast, copy, showFormError, clearFormError, busy, statePill, skeletonRows,
   } = window.KS;
 
   const PAGE_SIZE = 50;
@@ -22,12 +22,13 @@
   const loadErrorEl = $('load-error');
 
   let products = [];
+  let pendingProduct = ''; // product filter from the URL, until the list loads
   let items = [];
   let total = 0;
   let requestSeq = 0;
 
   function filters() {
-    return { q: qEl.value.trim(), product: productFilterEl.value, state: stateFilterEl.value };
+    return { q: qEl.value.trim(), product: productFilterEl.value || pendingProduct, state: stateFilterEl.value };
   }
 
   // Keep filters in the address bar, so a refresh or shared link keeps them.
@@ -317,15 +318,20 @@
   qEl.value = initial.get('q') || '';
   stateFilterEl.value = initial.get('state') || '';
 
-  ready.then(async () => {
-    try {
-      await loadProducts();
-    } catch (err) {
+  pendingProduct = initial.get('product') || '';
+
+  // Show placeholder rows, then load products and licenses at the same time.
+  tableEl.hidden = false;
+  bodyEl.innerHTML = skeletonRows(6);
+  loadLicenses();
+  loadProducts()
+    .then(() => {
+      productFilterEl.value = pendingProduct;
+      pendingProduct = '';
+    })
+    .catch((err) => {
       if (err.status === 401) return;
       loadErrorEl.textContent = `Couldn't load products: ${err.message}`;
       loadErrorEl.hidden = false;
-    }
-    productFilterEl.value = initial.get('product') || '';
-    loadLicenses();
-  });
+    });
 })();
