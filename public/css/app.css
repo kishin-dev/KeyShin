@@ -1,0 +1,132 @@
+/* Component styles shared by the login page and the dashboard. */
+
+:root { color-scheme: dark; }
+
+:focus-visible {
+  outline: 2px solid #E04A51;
+  outline-offset: 2px;
+}
+
+::selection { background: #D13B42; color: #fff; }
+
+/* ---------- Seal (hanko) ---------- */
+.seal {
+  display: inline-grid;
+  place-items: center;
+  flex-shrink: 0;
+  color: #fff;
+  background: #D13B42;
+  border-radius: 6px;
+  font-family: "Noto Serif JP", serif;
+  font-weight: 700;
+  line-height: 1;
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, .25);
+}
+.seal-sm { width: 34px; height: 34px; font-size: 20px; }
+
+.seal-stamp {
+  position: absolute;
+  right: -18px;
+  bottom: -22px;
+  width: 84px;
+  height: 84px;
+  font-size: 46px;
+  border-radius: 10px;
+  transform: rotate(-8deg);
+  box-shadow: inset 0 0 0 3px rgba(255, 255, 255, .28), 0 12px 32px rgba(209, 59, 66, .28);
+  animation: stamp 700ms cubic-bezier(.2, .9, .3, 1.3) 350ms both;
+}
+
+@keyframes stamp {
+  0%   { opacity: 0; transform: rotate(-8deg) scale(1.8); }
+  60%  { opacity: 1; transform: rotate(-8deg) scale(.94); }
+  100% { opacity: 1; transform: rotate(-8deg) scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .seal-stamp { animation: none; }
+}
+
+/* ---------- Sample key on the login page ---------- */
+.key-card {
+  position: relative;
+  max-width: 30rem;
+  padding: 2rem 2.25rem;
+  border: 1px solid #2B2B32;
+  border-radius: 14px;
+  background: #1F1F24;
+}
+
+/* ---------- Form controls ---------- */
+.field {
+  display: block;
+  width: 100%;
+  padding: .7rem .85rem;
+  background: #1F1F24;
+  color: #ECECF1;
+  border: 1px solid #2B2B32;
+  border-radius: 8px;
+  font-size: 1rem;
+  transition: border-color 120ms, box-shadow 120ms;
+}
+.field:hover { border-color: #3A3A43; }
+.field:focus {
+  outline: none;
+  border-color: #D13B42;
+  box-shadow: 0 0 0 3px rgba(209, 59, 66, .25);
+}
+.field[aria-invalid="true"] { border-color: #D13B42; }
+/* Keep browser autofill from painting fields yellow/white. */
+.field:-webkit-autofill {
+  -webkit-text-fill-color: #ECECF1;
+  -webkit-box-shadow: 0 0 0 1000px #1F1F24 inset;
+  caret-color: #ECECF1;
+}
+
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .5rem;
+  padding: .75rem 1.1rem;
+  background: #D13B42;
+  color: #fff;
+  border-radius: 8px;
+  font-weight: 600;
+  transition: background-color 120ms;
+}
+.btn-primary:hover { background: #E04A51; }
+.btn-primary:disabled { opacity: .5; cursor: not-allowed; }
+.btn-primary[aria-busy="true"] { cursor: progress; }
+
+.btn-quiet {
+  padding: .5rem .8rem;
+  border-radius: 8px;
+  font-weight: 500;
+  color: #ECECF1;
+}
+.btn-quiet:hover { background: #1F1F24; }
+
+/* ---------- Dashboard ---------- */
+.nav-link {
+  display: flex;
+  align-items: center;
+  gap: .7rem;
+  padding: .55rem .75rem;
+  border-radius: 8px;
+  color: #B4B4BE;
+  font-weight: 500;
+}
+.nav-link:hover { background: #1F1F24; color: #ECECF1; }
+.nav-link[aria-current="page"] {
+  background: #2A1618;
+  color: #fff;
+  box-shadow: inset 3px 0 0 #D13B42;
+}
+.nav-link[aria-disabled="true"] { color: #5E5E69; pointer-events: none; }
+.nav-link svg { width: 18px; height: 18px; flex-shrink: 0; }
+
+/* Hide the page until the session check finishes, so a signed-out visitor
+   doesn't see a flash of the dashboard before being redirected. */
+body.checking-session main,
+body.checking-session header { visibility: hidden; }
